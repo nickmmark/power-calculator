@@ -53,8 +53,8 @@ Returns the smallest even N such that Power(N/2) ≥ target. The only fully exac
 ## Choosing a method
 
 
-General use, large N expected --> Uncorrected z
-Small expected N (< ~100/arm) --> Yates or Fleiss 
-Analysis will use logistic regression --> Kelsey
-Regulatory or exact test requirement --> Fisher's exact
-Comparing methods / sensitivity check --> Run all four
+* General use, large N expected --> Uncorrected z
+* Small expected N (< ~100/arm) --> Yates or Fleiss 
+* Analysis will use logistic regression --> Kelsey
+* Regulatory or exact test requirement --> Fisher's exact
+* Comparing methods / sensitivity check --> Run all four

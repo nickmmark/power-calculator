@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sample Size Calculator</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #ffffff;
+    --bg-secondary: #f5f5f3;
+    --bg-tertiary: #eeede9;
+    --text: #1a1a18;
+    --text-secondary: #6b6b67;
+    --text-tertiary: #9b9b96;
+    --border: rgba(0,0,0,0.12);
+    --border-md: rgba(0,0,0,0.22);
+    --blue: #378ADD;
+    --blue-dark: #185FA5;
+    --radius-sm: 6px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --bg-secondary: #252523;
+      --bg-tertiary: #2e2e2b;
+      --text: #e8e8e4;
+      --text-secondary: #9b9b96;
+      --text-tertiary: #6b6b67;
+      --border: rgba(255,255,255,0.10);
+      --border-md: rgba(255,255,255,0.18);
+      --blue: #5ba3f0;
+      --blue-dark: #85b7eb;
+    }
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+    background: var(--bg-tertiary);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem;
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  .page {
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  header {
+    margin-bottom: 1.5rem;
+  }
+
+  header h1 {
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+
+  header p {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .card {
+    background: var(--bg);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .07em;
+    color: var(--text-tertiary);
+    margin-bottom: 10px;
+  }
+
+  .controls {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px;
+  }
+
+  .ctrl { display: flex; flex-direction: column; gap: 4px; }
+
+  .ctrl label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .ctrl input[type=number],
+  .ctrl select {
+    width: 100%;
+    padding: 6px 9px;
+    font-size: 13px;
+    border: 0.5px solid var(--border-md);
+    border-radius: var(--radius-sm);
+    background: var(--bg-secondary);
+    color: var(--text);
+    appearance: none;
+    -webkit-appearance: none;
+    outline: none;
+    transition: border-color .15s;
+  }
+
+  .ctrl input[type=number]:focus,
+  .ctrl select:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 2px rgba(55,138,221,0.15);
+  }
+
+  /* formula buttons */
+  .formula-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .formula-row .row-label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    margin-right: 2px;
+  }
+
+  .fbtn {
+    font-size: 12px;
+    font-weight: 500;
+    padding: 5px 12px;
+    border: 0.5px solid var(--border-md);
+    border-radius: 99px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all .15s;
+    white-space: nowrap;
+  }
+
+  .fbtn:hover { border-color: var(--blue); color: var(--blue); }
+
+  .fbtn.active {
+    background: var(--blue);
+    border-color: var(--blue);
+    color: #fff;
+  }
+
+  .fisher-warn {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    display: none;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .fisher-warn.visible { display: flex; }
+
+  /* heatmap toggle */
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 12px;
+  }
+
+  .toggle-row label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+  }
+
+  /* custom toggle switch */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 34px;
+    height: 20px;
+  }
+
+  .switch input { opacity: 0; width: 0; height: 0; }
+
+  .slider-sw {
+    position: absolute;
+    inset: 0;
+    background: var(--border-md);
+    border-radius: 99px;
+    transition: background .2s;
+    cursor: pointer;
+  }
+
+  .slider-sw::before {
+    content: '';
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    left: 3px;
+    top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform .2s;
+  }
+
+  .switch input:checked + .slider-sw { background: var(--blue); }
+  .switch input:checked + .slider-sw::before { transform: translateX(14px); }
+
+  /* table */
+  .tbl-wrap { overflow-x: auto; }
+
+  table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 13px;
+    min-width: 400px;
+  }
+
+  th {
+    background: var(--bg-secondary);
+    font-weight: 500;
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-align: right;
+    padding: 7px 12px;
+    border: 0.5px solid var(--border);
+    white-space: nowrap;
+  }
+
+  th.corner { text-align: left; }
+
+  td {
+    padding: 6px 12px;
+    text-align: right;
+    border: 0.5px solid var(--border);
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+    transition: background .2s, color .2s;
+  }
+
+  td.rowhead {
+    text-align: left;
+    font-weight: 500;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    white-space: nowrap;
+    font-size: 12px;
+  }
+
+  td.null-cell { color: var(--text-tertiary); }
+
+  .footer-note {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-top: 10px;
+    line-height: 1.6;
+  }
+
+  /* formula descriptions */
+  .desc-box {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    font-size: 12px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    border-left: 2px solid var(--blue);
+  }
+
+  .spinner {
+    padding: 2rem 0;
+    color: var(--text-tertiary);
+    font-size: 13px;
+  }
+
+  /* heatmap legend */
+  .legend {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 11px;
+    color: var(--text-tertiary);
+  }
+
+  .legend-bar {
+    height: 10px;
+    width: 120px;
+    border-radius: 4px;
+    background: linear-gradient(to right, hsl(120,62%,42%), hsl(60,62%,42%), hsl(0,62%,42%));
+    flex-shrink: 0;
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1>Sample size calculator — two proportions</h1>
+    <p>Total N (both arms) to detect a mortality difference at specified power and alpha.</p>
+  </header>
+
+  <!-- Parameters -->
+  <div class="card">
+    <div class="section-label">Parameters</div>
+    <div class="controls">
+      <div class="ctrl">
+        <label>Power (%)</label>
+        <input type="number" id="power" value="80" min="50" max="99" step="1">
+      </div>
+      <div class="ctrl">
+        <label>Alpha</label>
+        <select id="alpha">
+          <option value="0.05" selected>0.05 — two-sided</option>
+          <option value="0.025">0.025 — two-sided</option>
+          <option value="0.10">0.10 — two-sided</option>
+          <option value="0.05_one">0.05 — one-sided</option>
+        </select>
+      </div>
+      <div class="ctrl">
+        <label>Baseline start (%)</label>
+        <input type="number" id="baseStart" value="10" min="1" max="90" step="1">
+      </div>
+      <div class="ctrl">
+        <label>Baseline step (%)</label>
+        <input type="number" id="baseStep" value="10" min="1" max="30" step="1">
+      </div>
+      <div class="ctrl">
+        <label>Baseline rows</label>
+        <input type="number" id="baseRows" value="7" min="1" max="15" step="1">
+      </div>
+      <div class="ctrl">
+        <label>Delta start (%)</label>
+        <input type="number" id="dStart" value="2" min="1" max="40" step="1">
+      </div>
+      <div class="ctrl">
+        <label>Delta step (%)</label>
+        <input type="number" id="dStep" value="3" min="1" max="20" step="1">
+      </div>
+      <div class="ctrl">
+        <label>Delta columns</label>
+        <input type="number" id="dCols" value="5" min="1" max="12" step="1">
+      </div>
+    </div>
+  </div>
+
+  <!-- Formula -->
+  <div class="card">
+    <div class="section-label">Method</div>
+    <div class="formula-row">
+      <span class="row-label">Formula:</span>
+      <button class="fbtn active" data-f="uncorrected">Uncorrected z</button>
+      <button class="fbtn" data-f="yates">Yates</button>
+      <button class="fbtn" data-f="fleiss">Fleiss</button>
+      <button class="fbtn" data-f="kelsey">Kelsey (OR)</button>
+      <button class="fbtn" data-f="fisher">Fisher's exact</button>
+      <span class="fisher-warn" id="fisherWarn">&#9888; slow — uses enumeration</span>
+    </div>
+    <div class="desc-box" id="descBox">
+      Two-proportion z-test, uncorrected. Standard method; slightly liberal at small N. Baseline for comparison.
+    </div>
+    <div class="toggle-row">
+      <label class="switch">
+        <input type="checkbox" id="heatmap">
+        <span class="slider-sw"></span>
+      </label>
+      <label for="heatmap">Heatmap mode</label>
+    </div>
+  </div>
+
+  <!-- Table -->
+  <div class="card">
+    <div class="tbl-wrap" id="tableWrap">
+      <div class="spinner">Computing…</div>
+    </div>
+    <div class="legend" id="legend" style="display:none">
+      <span>Smaller N</span>
+      <div class="legend-bar"></div>
+      <span>Larger N</span>
+    </div>
+    <p class="footer-note" id="footer"></p>
+  </div>
+
+</div>
+<script>
+// ── Normal distribution utilities ─────────────────────────────────────────────
+function normInv(p) {
+  const a = [-3.969683028665376e+01, 2.209460984245205e+02, -2.759285104469687e+02,
+              1.383577518672690e+02, -3.066479806614716e+01,  2.506628277459239e+00];
+  const b = [-5.447609879822406e+01, 1.615858368580409e+02, -1.556989798598866e+02,
+              6.680131188771972e+01, -1.328068155288572e+01];
+  const c = [-7.784894002430293e-03, -3.223964580411365e-01, -2.400758277161838e+00,
+              -2.549732539343734e+00,  4.374664141464968e+00,  2.938163982698783e+00];
+  const d = [ 7.784695709041462e-03,  3.224671290700398e-01,  2.445134137142996e+00,
+               3.754408661907416e+00];
+  const pLow = 0.02425, pHigh = 1 - pLow;
+  let q, r;
+  if (p < pLow) {
+    q = Math.sqrt(-2 * Math.log(p));
+    return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) /
+           ((((d[0]*q+d[1])*q+d[2])*q+d[3]));
+  }
+  if (p <= pHigh) {
+    q = p - 0.5; r = q * q;
+    return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q /
+           (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+  }
+  q = Math.sqrt(-2 * Math.log(1 - p));
+  return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) /
+           ((((d[0]*q+d[1])*q+d[2])*q+d[3]));
+}
+
+// ── Fisher's exact helpers ────────────────────────────────────────────────────
+const _lf = [0];
+function factln(n) {
+  if (n <= 1) return 0;
+  while (_lf.length <= n) _lf.push(_lf[_lf.length-1] + Math.log(_lf.length));
+  return _lf[n];
+}
+
+function fisherPval(a, b, c, d) {
+  const N = a+b+c+d, r1 = a+b, c1 = a+c;
+  const logRef = factln(r1)+factln(N-r1)+factln(c1)+factln(N-c1)-factln(N);
+  const lo = Math.max(0, r1+c1-N), hi = Math.min(r1, c1);
+  const logP0 = logRef - factln(a)-factln(b)-factln(c)-factln(d);
+  let p = 0;
+  for (let x = lo; x <= hi; x++) {
+    const lp = logRef - factln(x)-factln(r1-x)-factln(c1-x)-factln(N-r1-c1+x);
+    if (lp <= logP0 + 1e-10) p += Math.exp(lp);
+  }
+  return Math.min(p, 1);
+}
+
+function fisherPower(nPerArm, p1, p2, alpha) {
+  let pow = 0;
+  const n = nPerArm;
+  const lp1 = Math.log(p1), lq1 = Math.log(1-p1);
+  const lp2 = Math.log(p2), lq2 = Math.log(1-p2);
+  for (let a = 0; a <= n; a++) {
+    const la = factln(n)-factln(a)-factln(n-a)+a*lp1+(n-a)*lq1;
+    if (la < -30) continue;
+    const pa = Math.exp(la);
+    for (let c = 0; c <= n; c++) {
+      const lc = factln(n)-factln(c)-factln(n-c)+c*lp2+(n-c)*lq2;
+      if (lc < -30) continue;
+      if (fisherPval(a, n-a, c, n-c) < alpha) pow += pa * Math.exp(lc);
+    }
+  }
+  return pow;
+}
+
+function nFisher(p1, p2, power, alpha) {
+  const target = power / 100;
+  for (let n = 5; n <= 2000; n += (n < 50 ? 1 : 2)) {
+    if (fisherPower(n, p1, p2, alpha) >= target) return n * 2;
+  }
+  return null;
+}
+
+// ── Sample size formulas ──────────────────────────────────────────────────────
+function nUncorrected(p1, p2, power, alpha, oneSided) {
+  const za = normInv(oneSided ? 1-alpha : 1-alpha/2);
+  const zb = normInv(power / 100);
+  const pBar = (p1+p2)/2;
+  const num = Math.pow(za*Math.sqrt(2*pBar*(1-pBar)) + zb*Math.sqrt(p1*(1-p1)+p2*(1-p2)), 2);
+  return Math.ceil(num / Math.pow(p1-p2, 2)) * 2;
+}
+
+function nYates(p1, p2, power, alpha, oneSided) {
+  const n0 = nUncorrected(p1, p2, power, alpha, oneSided) / 2;
+  const delta = Math.abs(p1-p2);
+  return Math.ceil((n0/4) * Math.pow(1 + Math.sqrt(1 + 2/(n0*delta)), 2)) * 2;
+}
+
+function nFleiss(p1, p2, power, alpha, oneSided) {
+  const za = normInv(oneSided ? 1-alpha : 1-alpha/2);
+  const zb = normInv(power / 100);
+  const pBar = (p1+p2)/2, qBar = 1-pBar;
+  const A = za*Math.sqrt(2*pBar*qBar) + zb*Math.sqrt(p1*(1-p1)+p2*(1-p2));
+  const delta = Math.abs(p1-p2);
+  const n0 = Math.ceil(A*A / (delta*delta));
+  return Math.ceil((n0/4) * Math.pow(1 + Math.sqrt(1 + 4/(n0*delta)), 2)) * 2;
+}
+
+function nKelsey(p1, p2, power, alpha, oneSided) {
+  const OR = (p2*(1-p1)) / (p1*(1-p2));
+  const pBar = (p1+p2)/2;
+  const za = normInv(oneSided ? 1-alpha : 1-alpha/2);
+  const zb = normInv(power / 100);
+  return Math.ceil(Math.pow(za+zb, 2) / (Math.pow(Math.log(OR), 2) * pBar * (1-pBar))) * 2;
+}
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let currentFormula = 'uncorrected';
+let renderTimer = null;
+
+const descriptions = {
+  uncorrected: 'Two-proportion z-test, uncorrected. Standard method; slightly liberal at small N. Baseline for comparison.',
+  yates:       'Yates continuity-corrected z-test. Adds ±1/(2n) to shrink the effective delta. More conservative; converges toward Fisher at small N.',
+  fleiss:      'Fleiss continuity correction. Derived independently from Yates; produces slightly different N when p1 and p2 are asymmetric around 0.5. Common in epidemiology software (OpenEpi, Epi Info).',
+  kelsey:      'Kelsey (OR-based) formula. Parameterizes effect size as the odds ratio between the two proportions. Matches uncorrected z at low baselines; diverges where OR and ARD decouple. Appropriate when the analysis model will be logistic regression.',
+  fisher:      "Fisher's exact — iterated enumeration. Finds the smallest N where actual Fisher test power meets the target. The only fully exact method. Caps at N = 4,000 total. Slow for large tables."
+};
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function getParams() {
+  const alphaRaw = document.getElementById('alpha').value;
+  const oneSided = alphaRaw.includes('one');
+  return {
+    power:     parseFloat(document.getElementById('power').value)    || 80,
+    alphaVal:  parseFloat(oneSided ? '0.05' : alphaRaw),
+    oneSided,
+    baseStart: parseFloat(document.getElementById('baseStart').value) || 10,
+    baseStep:  parseFloat(document.getElementById('baseStep').value)  || 10,
+    baseRows:  parseInt(document.getElementById('baseRows').value)    || 7,
+    dStart:    parseFloat(document.getElementById('dStart').value)    || 2,
+    dStep:     parseFloat(document.getElementById('dStep').value)     || 3,
+    dCols:     parseInt(document.getElementById('dCols').value)       || 5,
+    hm:        document.getElementById('heatmap').checked
+  };
+}
+
+function buildTable(rows, baselines, deltas, hm) {
+  const allN = rows.flat().filter(n => n !== null);
+  const minN = Math.min(...allN), maxN = Math.max(...allN);
+
+  let html = '<table><thead><tr><th class="corner">Baseline / Δ</th>';
+  deltas.forEach(d => html += `<th>Δ = ${d}%</th>`);
+  html += '</tr></thead><tbody>';
+
+  baselines.forEach((b, i) => {
+    html += `<tr><td class="rowhead">${b}% baseline</td>`;
+    deltas.forEach((_, j) => {
+      const n = rows[i][j];
+      let style = '';
+      if (hm && n !== null) {
+        const t = (n - minN) / (maxN - minN || 1);
+        const h = Math.round(120 - t * 120);
+        style = `background:hsl(${h},62%,42%);color:#fff;font-weight:500`;
+      }
+      const cls = n === null ? ' class="null-cell"' : '';
+      html += `<td${cls} style="${style}">${n === null ? '—' : n.toLocaleString()}</td>`;
+    });
+    html += '</tr>';
+  });
+
+  html += '</tbody></table>';
+  return html;
+}
+
+function setFooter(p, fname) {
+  const side = p.oneSided ? 'one-sided' : 'two-sided';
+  document.getElementById('footer').textContent =
+    `N = total patients (both arms combined). Power = ${p.power}%. α = ${p.alphaVal} (${side}). Method: ${fname}.` +
+    (p.hm ? ' Heatmap: green = smaller N, red = larger N.' : '');
+}
+
+function render() {
+  const p = getParams();
+  const baselines = [], deltas = [];
+  for (let i = 0; i < p.baseRows; i++) baselines.push(p.baseStart + i * p.baseStep);
+  for (let i = 0; i < p.dCols;   i++) deltas.push(p.dStart + i * p.dStep);
+
+  document.getElementById('legend').style.display = p.hm ? 'flex' : 'none';
+
+  const fnMap = { uncorrected: nUncorrected, yates: nYates, fleiss: nFleiss, kelsey: nKelsey };
+  const nameMap = {
+    uncorrected: 'Uncorrected z', yates: 'Yates continuity-corrected z',
+    fleiss: 'Fleiss correction', kelsey: 'Kelsey (OR-based)', fisher: "Fisher's exact (iterated)"
+  };
+
+  if (currentFormula === 'fisher') {
+    document.getElementById('tableWrap').innerHTML =
+      '<div class="spinner">Running Fisher enumeration — may take a few seconds…</div>';
+    setTimeout(() => {
+      const rows = baselines.map(b => deltas.map(d => {
+        const p1 = b/100, p2 = (b-d)/100;
+        if (p2 <= 0 || p2 >= 1) return null;
+        return nFisher(p1, p2, p.power, p.alphaVal);
+      }));
+      document.getElementById('tableWrap').innerHTML = buildTable(rows, baselines, deltas, p.hm);
+      setFooter(p, nameMap.fisher);
+    }, 60);
+    return;
+  }
+
+  const fn = fnMap[currentFormula];
+  const rows = baselines.map(b => deltas.map(d => {
+    const p1 = b/100, p2 = (b-d)/100;
+    if (p2 <= 0 || p2 >= 1 || p1 <= 0 || p1 >= 1) return null;
+    return fn(p1, p2, p.power, p.alphaVal, p.oneSided);
+  }));
+  document.getElementById('tableWrap').innerHTML = buildTable(rows, baselines, deltas, p.hm);
+  setFooter(p, nameMap[currentFormula]);
+}
+
+function scheduleRender() {
+  clearTimeout(renderTimer);
+  renderTimer = setTimeout(render, 280);
+}
+
+// ── Wire up events ────────────────────────────────────────────────────────────
+document.querySelectorAll('.fbtn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.fbtn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFormula = btn.dataset.f;
+    const warn = document.getElementById('fisherWarn');
+    warn.classList.toggle('visible', currentFormula === 'fisher');
+    document.getElementById('descBox').textContent = descriptions[currentFormula];
+    scheduleRender();
+  });
+});
+
+document.querySelectorAll('input, select').forEach(el => el.addEventListener('input', scheduleRender));
+
+render();
+</script>
+</body>
+</html>

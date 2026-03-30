@@ -2,8 +2,6 @@
 simple html/js sample size calculator for clinical trials
 
 ## Statistical methods
-## Statistical methods
-
 All methods test H₀: p₁ = p₂. The treatment arm rate is p₂ = baseline − Δ. Output N is total patients; equal allocation is assumed throughout, so N = 2 × n per arm, rounded up to the nearest even integer.
 
 Shared notation:

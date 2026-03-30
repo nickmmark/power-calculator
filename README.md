@@ -3,7 +3,7 @@ simple html/js sample size calculator for clinical trials
 
 ## Statistical methods
 ### Uncorrected Z-test
-```math
+```
 p_bar = (p1 + p2) / 2
 
 n_per_arm = ( z_alpha * sqrt(2 * p_bar * (1 - p_bar))

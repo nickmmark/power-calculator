@@ -51,4 +51,10 @@ $$\text{Power}(n) = \sum_{a=0}^{n}\sum_{c=0}^{n} \binom{n}{a}p_1^a(1-p_1)^{n-a} 
 Returns the smallest even N such that Power(N/2) ≥ target. The only fully exact method. Computationally expensive; caps at N = 4,000.
 
 ## Choosing a method
-SituationRecommended methodGeneral use, large N expectedUncorrected zSmall expected N (< ~100/arm)Yates or FleissAnalysis will use logistic regressionKelseyRegulatory or exact test requirementFisher's exactComparing methods / sensitivity checkRun all four
+
+
+General use, large N expected --> Uncorrected z
+Small expected N (< ~100/arm) --> Yates or Fleiss 
+Analysis will use logistic regression --> Kelsey
+Regulatory or exact test requirement --> Fisher's exact
+Comparing methods / sensitivity check --> Run all four

@@ -2,47 +2,53 @@
 simple html/js sample size calculator for clinical trials
 
 ## Statistical methods
-### Uncorrected Z-test
-```
-p_bar = (p1 + p2) / 2
+## Statistical methods
 
-n_per_arm = ( z_alpha * sqrt(2 * p_bar * (1 - p_bar))
-            + z_beta  * sqrt(p1*(1-p1) + p2*(1-p2)) )^2
-            / (p1 - p2)^2
-```
+All methods test H₀: p₁ = p₂. The treatment arm rate is p₂ = baseline − Δ. Output N is total patients; equal allocation is assumed throughout, so N = 2 × n per arm, rounded up to the nearest even integer.
 
-### Yates
-Start from uncorrected n_per_arm = n0, then:
-```math
-n_per_arm = (n0 / 4) * (1 + sqrt(1 + 2 / (n0 * |p1 - p2|)))^2
-```
+Shared notation:
 
-### Fleiss
-Same starting point as Yates, different inner constant:
-```math
-n_per_arm = (n0 / 4) * (1 + sqrt(1 + 4 / (n0 * |p1 - p2|)))^2
-```
+$$\bar{p} = \frac{p_1 + p_2}{2}, \quad z_\alpha = \Phi^{-1}\!\left(1 - \frac{\alpha}{2}\right), \quad z_\beta = \Phi^{-1}(\text{power})$$
 
-### Kelsey (OR based)
-```math
-OR    = (p2 * (1 - p1)) / (p1 * (1 - p2))
-p_bar = (p1 + p2) / 2
+---
 
-n_per_arm = (z_alpha + z_beta)^2
-            / (ln(OR)^2 * p_bar * (1 - p_bar))
-```
+### Uncorrected z
 
-### Fisher's Exact (enumerated)
-For each candidate N, compute power by full enumeration:
-```math
-power = sum over a in 0..n:
+$$n = \frac{\Bigl(z_\alpha\sqrt{2\bar{p}(1-\bar{p})} + z_\beta\sqrt{p_1(1-p_1)+p_2(1-p_2)}\Bigr)^2}{(p_1-p_2)^2}$$
 
-          sum over c in 0..n:
-            P(X1 = a | n, p1) * P(X2 = c | n, p2)
-            * I[ fisher_pval(a, n-a, c, n-c) < alpha ]
+Standard two-proportion z-test. Slightly liberal at small N.
 
-# Return smallest even N where power >= target
-```
+---
+
+### Yates continuity-corrected z
+
+$$n = \frac{n_0}{4}\left(1 + \sqrt{1 + \frac{2}{n_0\,|p_1-p_2|}}\right)^2$$
+
+where $n_0$ is the uncorrected per-arm estimate. More conservative than uncorrected; converges toward Fisher at small N.
+
+---
+
+### Fleiss correction
+
+$$n = \frac{n_0}{4}\left(1 + \sqrt{1 + \frac{4}{n_0\,|p_1-p_2|}}\right)^2$$
+
+Same structure as Yates with a different inner constant. Produces slightly different estimates when $p_1$ and $p_2$ are asymmetric around 0.5.
+
+---
+
+### Kelsey (odds ratio–based)
+
+$$\text{OR} = \frac{p_2(1-p_1)}{p_1(1-p_2)}, \qquad n = \frac{(z_\alpha + z_\beta)^2}{(\ln\text{OR})^2\,\bar{p}(1-\bar{p})}$$
+
+Appropriate when the planned analysis is logistic regression. Converges with the uncorrected z-test at low event rates; diverges where OR and absolute risk difference decouple.
+
+---
+
+### Fisher's exact (iterated enumeration)
+
+$$\text{Power}(n) = \sum_{a=0}^{n}\sum_{c=0}^{n} \binom{n}{a}p_1^a(1-p_1)^{n-a} \cdot \binom{n}{c}p_2^c(1-p_2)^{n-c} \cdot \mathbf{1}\bigl[p_\text{Fisher}(a,c) < \alpha\bigr]$$
+
+Returns the smallest even N such that Power(N/2) ≥ target. The only fully exact method. Computationally expensive; caps at N = 4,000.
 
 ## Choosing a method
 SituationRecommended methodGeneral use, large N expectedUncorrected zSmall expected N (< ~100/arm)Yates or FleissAnalysis will use logistic regressionKelseyRegulatory or exact test requirementFisher's exactComparing methods / sensitivity checkRun all four
